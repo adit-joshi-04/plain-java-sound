@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  </head>
+  <body>
+    <script>
+      let micStream;
+      let audioContext;
+      let analyser;
+      let dataArray;
+      let volume = 0;
+
+      async function setup() {
+        createCanvas(600, 400);
+        background(0);
+
+        // Ask for mic access
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Set up audio context and analyser
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(micStream);
+
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 1024;
+        dataArray = new Uint8Array(analyser.fftSize);
+
+        source.connect(analyser);
+      }
+
+      function draw() {
+        background(0);
+
+        if (analyser) {
+          analyser.getByteTimeDomainData(dataArray);
+
+          // Calculate volume as average deviation from center (128)
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            let val = dataArray[i] - 128;
+            sum += Math.abs(val);
+          }
+          volume = sum / dataArray.length;
+
+          // Use volume value to control something visually
+          fill(255);
+          let radius = map(volume, 0, 50, 10, 200);
+          ellipse(width / 2, height / 2, radius);
+        }
+      }
+    </script>
+  </body>
